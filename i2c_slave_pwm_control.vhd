@@ -159,7 +159,8 @@ generic(N: INTEGER);
 		pwm_count : IN std_logic_vector(7 downto 0);          
 		pwm_out : OUT std_logic
 		);
-	END COMPONENT; 
+	END COMPONENT pwm; 
+		
 COMPONENT slave
 	generic(address: STD_LOGIC_VECTOR(6 downto 0);
 				N:INTEGER);
@@ -170,7 +171,7 @@ COMPONENT slave
 		sda : INOUT std_logic;     
 		d : OUT std_logic_vector(7 downto 0)
 		);
-	END COMPONENT;
+	END COMPONENT slave;
 	
 begin
 

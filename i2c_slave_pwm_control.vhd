@@ -150,7 +150,7 @@ port(clk:in std_logic;
 		pwm_out:out STD_LOGIC);
 end I2Cpwm;
 
-architecture Behavioral of I2Cpwm is
+architecture combined of I2Cpwm is
 COMPONENT pwm
 generic(N: INTEGER);
 	PORT(
@@ -212,4 +212,4 @@ pwm_gen : pwm
 		pwm_count => dat ,
 		pwm_out => pwm_out);
 
-end Behavioral;
+end combined;

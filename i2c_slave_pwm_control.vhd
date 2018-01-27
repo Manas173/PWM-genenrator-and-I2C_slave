@@ -211,5 +211,7 @@ pwm_gen : pwm
 	port map(clk => clk ,
 		pwm_count => dat ,
 		pwm_out => pwm_out);
+	
+	
 
 end Behavioral;

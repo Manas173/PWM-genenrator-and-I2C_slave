@@ -151,7 +151,6 @@ port(clk:in std_logic;
 end I2Cpwm;
 
 architecture Behavioral of I2Cpwm is
-signal dat:std_logic_vector(7 downto 0);
 COMPONENT pwm
 generic(N: INTEGER);
 	PORT(
@@ -159,8 +158,7 @@ generic(N: INTEGER);
 		pwm_count : IN std_logic_vector(7 downto 0);          
 		pwm_out : OUT std_logic
 		);
-	END COMPONENT pwm; 
-		
+	END COMPONENT; 
 COMPONENT slave
 	generic(address: STD_LOGIC_VECTOR(6 downto 0);
 				N:INTEGER);
@@ -171,8 +169,8 @@ COMPONENT slave
 		sda : INOUT std_logic;     
 		d : OUT std_logic_vector(7 downto 0)
 		);
-	END COMPONENT slave;
-	
+	END COMPONENT;
+signal dat:std_logic_vector(7 downto 0);
 begin
 
 i2c_reg1 : slave

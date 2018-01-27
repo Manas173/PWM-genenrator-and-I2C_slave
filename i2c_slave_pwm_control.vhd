@@ -139,8 +139,11 @@ end if;
 end process;
 end Behavioral;
 
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.all;
+use IEEE.STD_LOGIC_UNSIGNED.all;
 
 entity I2Cpwm is
 port(clk:in std_logic;

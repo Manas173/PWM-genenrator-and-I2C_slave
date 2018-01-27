@@ -83,8 +83,8 @@ begin
 						end if;
 					end if;
 						
-						if(flag='1' and scl='1' and sda='1' and sda'event) then
-							state<=idle;
+						if(flag='1' and scl='1' and sda='1' and sda'event) then		--STOP CONDITION
+							state<=idle;					
 							flag:='0';
 							d(N-1 downto 0)<=(others=>'0');
 						end if;

@@ -1,5 +1,80 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+
+entity I2Cpwm is
+port(clk:in std_logic;
+		sda:inout std_logic:='Z';
+		reset:in std_logic;
+		scl:in std_logic;
+		pwm_out:out STD_LOGIC);
+end I2Cpwm;
+
+architecture combined of I2Cpwm is
+COMPONENT pwm
+generic(N: INTEGER);
+	PORT(
+		clk : IN std_logic;
+		pwm_count : IN std_logic_vector(7 downto 0);          
+		pwm_out : OUT std_logic
+		);
+	END COMPONENT; 
+COMPONENT slave
+	generic(address: STD_LOGIC_VECTOR(6 downto 0);
+				N:INTEGER);
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		scl : IN std_logic;    
+		sda : INOUT std_logic;     
+		d : OUT std_logic_vector(7 downto 0)
+		);
+	END COMPONENT;
+signal dat:std_logic_vector(7 downto 0);
+begin
+
+i2c_reg1 : slave
+   generic map(address=>"1010100",
+					N=>8)
+		port map(clk =>clk,
+		reset => reset,
+		scl => scl,   
+		sda => sda,     
+		d => dat);
+i2c_reg2 : slave
+   generic map(address=>"1010000",
+					N=>8)
+		port map(clk =>clk,
+		reset => reset,
+		scl => scl,   
+		sda => sda,     
+		d => dat);
+i2c_reg3 : slave
+   generic map(address=>"1010111",
+					N=>8)
+		port map(clk =>clk,
+		reset => reset,
+		scl => scl,   
+		sda => sda,     
+		d => dat);
+i2c_reg4 : slave
+   generic map(address=>"1111111",
+					N=>8)
+		port map(clk =>clk,
+		reset => reset,
+		scl => scl,   
+		sda => sda,     
+		d => dat);		
+
+pwm_gen : pwm
+	generic map(N=> 8)
+	port map(clk => clk ,
+		pwm_count => dat ,
+		pwm_out => pwm_out);
+
+end combined;
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
@@ -138,81 +213,3 @@ end if;
 	end if;
 end process;
 end Behavioral;
-
-
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.all;
-use IEEE.STD_LOGIC_UNSIGNED.all;
-
-entity I2Cpwm is
-port(clk:in std_logic;
-		sda:inout std_logic:='Z';
-		reset:in std_logic;
-		scl:in std_logic;
-		pwm_out:out STD_LOGIC);
-end I2Cpwm;
-
-architecture combined of I2Cpwm is
-COMPONENT pwm
-generic(N: INTEGER);
-	PORT(
-		clk : IN std_logic;
-		pwm_count : IN std_logic_vector(7 downto 0);          
-		pwm_out : OUT std_logic
-		);
-	END COMPONENT; 
-COMPONENT slave
-	generic(address: STD_LOGIC_VECTOR(6 downto 0);
-				N:INTEGER);
-	PORT(
-		clk : IN std_logic;
-		reset : IN std_logic;
-		scl : IN std_logic;    
-		sda : INOUT std_logic;     
-		d : OUT std_logic_vector(7 downto 0)
-		);
-	END COMPONENT;
-signal dat:std_logic_vector(7 downto 0);
-begin
-
-i2c_reg1 : slave
-   generic map(address=>"1010100",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);
-i2c_reg2 : slave
-   generic map(address=>"1010000",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);
-i2c_reg3 : slave
-   generic map(address=>"1010111",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);
-i2c_reg4 : slave
-   generic map(address=>"1111111",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);		
-
-pwm_gen : pwm
-	generic map(N=> 8)
-	port map(clk => clk ,
-		pwm_count => dat ,
-		pwm_out => pwm_out);
-
-end combined;

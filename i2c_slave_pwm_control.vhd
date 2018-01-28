@@ -31,8 +31,6 @@ BEGIN
 			IF reset = '0' THEN
 				CASE state IS
 					WHEN idle => 
-						IF clk'EVENT AND clk = '1' THEN
-						END IF;
 						IF (scl = '1' AND falling_edge(sda)) THEN
 							state <= start;
 							sda <= 'Z';

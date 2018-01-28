@@ -102,13 +102,13 @@ BEGIN
 	END PROCESS;
 	END I2C;
 
-	LIBRARY IEEE; 
-	USE IEEE.STD_LOGIC_1164.ALL;
-	USE IEEE.STD_LOGIC_ARITH.ALL;
-	USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+LIBRARY IEEE; 
+USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.STD_LOGIC_ARITH.ALL;
+USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-	ENTITY pwm IS -- The pwm generator starts here
-		GENERIC (N : INTEGER); -- Defines the pwm data bit size
+ENTITY pwm IS -- The pwm generator starts here
+	GENERIC (N : INTEGER); -- Defines the pwm data bit size
 
 		PORT (
 		clk : IN STD_LOGIC;

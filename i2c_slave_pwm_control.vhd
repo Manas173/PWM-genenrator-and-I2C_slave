@@ -9,7 +9,6 @@ ENTITY slave IS
 	N : INTEGER); 					--N define the data bits size
 
 	PORT (
-		clk : IN std_logic; 			--system clock
 		sda : INOUT std_logic := 'Z';
 		reset : IN std_logic;			--goes to idle state when reset is 1
 		scl : IN std_logic; 
@@ -170,7 +169,6 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 			N : INTEGER
 			);
 		PORT (
-			clk : IN std_logic;
 			reset : IN std_logic;
 			scl : IN std_logic; 
 			sda : INOUT std_logic; 
@@ -186,7 +184,6 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				address => "1010100", 
 				N => 8)
 			PORT MAP(
-				clk => clk, 
 				reset => reset, 
 				scl => scl, 
 				sda => sda, 
@@ -197,7 +194,6 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				address => "1010000", 
 				N => 8)
 			PORT MAP(
-				clk => clk, 
 				reset => reset, 
 				scl => scl, 
 				sda => sda, 
@@ -208,7 +204,6 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				address => "1010111", 
 				N => 8)
 			PORT MAP(
-				clk => clk, 
 				reset => reset, 
 				scl => scl, 
 				sda => sda, 
@@ -219,7 +214,6 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				address => "1111111", 
 				N => 8)
 			PORT MAP(
-				clk => clk, 
 				reset => reset, 
 				scl => scl, 
 				sda => sda, 

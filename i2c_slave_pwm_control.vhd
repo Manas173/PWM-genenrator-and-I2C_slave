@@ -17,7 +17,7 @@ ENTITY slave IS
 END slave;
 
 ARCHITECTURE I2C OF slave IS
-	TYPE machine IS (idle, start, read_address, receive_data); 
+	TYPE machine IS (idle, read_address, receive_data); 
 	SIGNAL state : machine := idle;
 	SIGNAL data : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL addr : STD_LOGIC_VECTOR(6 DOWNTO 0) := (OTHERS => '0');
@@ -25,20 +25,15 @@ ARCHITECTURE I2C OF slave IS
 	SHARED VARIABLE flag : STD_LOGIC := '0';
 
 BEGIN
-	PROCESS (clk, reset, scl)
+	PROCESS (reset, scl, sda )
 	BEGIN
-		IF rising_edge(clk) THEN
 			IF reset = '0' THEN
 				CASE state IS
 					WHEN idle => 
 						IF (scl = '1' AND falling_edge(sda)) THEN
-							state <= start;
-							sda <= 'Z';
-						END IF;
-					WHEN start => 
-						IF rising_edge(clk) THEN
 							state <= read_address;
 							count := 6;
+							sda <= 'Z';
 						END IF;
 					WHEN read_address => -- Reads the address from the SDA line
 						IF count >= 0 THEN
@@ -70,6 +65,7 @@ BEGIN
 						END IF;
 					WHEN receive_data => --Goes to receive data if the address matches
 						IF count >= 0 THEN
+								sda <= 'Z';
 							IF rising_edge(scl) THEN
 								data(count) <= sda;
 								count := count - 1;
@@ -97,8 +93,6 @@ BEGIN
 				d(N - 1 DOWNTO 0) <= (OTHERS => '0');
  
 			END IF;
-		END IF;
-
 	END PROCESS;
 	END I2C;
 

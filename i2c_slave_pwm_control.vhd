@@ -121,124 +121,124 @@ END pwm;
 ARCHITECTURE Behavioral OF pwm IS
  
 	SIGNAL max_count : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '1');
-		SIGNAL cout : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
-			SIGNAL pwm_input : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
-			SIGNAL check : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL cout : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
+	SIGNAL pwm_input : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
+	SIGNAL check : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => 'Z');
+	BEGIN
+		PROCESS (clk)
 			BEGIN
-				PROCESS (clk)
-				BEGIN
-					IF (pwm_count = check) THEN
-						pwm_input <= (OTHERS => '0');
-					ELSE
-						pwm_input <= pwm_count;
-					END IF;
-					IF rising_edge(clk) THEN
-						IF cout <= max_count THEN
-							IF cout < pwm_input THEN
-								pwm_out <= '1';
-							ELSE
-								pwm_out <= '0';
-							END IF;
-							cout <= cout + 1;
+				IF (pwm_count = check) THEN
+					pwm_input <= (OTHERS => '0');
+				ELSE
+					pwm_input <= pwm_count;
+				END IF;
+				IF rising_edge(clk) THEN
+					IF cout <= max_count THEN
+						IF cout < pwm_input THEN
+							pwm_out <= '1';
 						ELSE
-							cout <= (OTHERS => '0');
+							pwm_out <= '0';
 						END IF;
-					END IF;
-				END PROCESS;
-				END Behavioral;
+						cout <= cout + 1;
+					ELSE
+						cout <= (OTHERS => '0');
+          				END IF;
+				END IF;
+			END PROCESS;
+		END Behavioral;
+			
+LIBRARY IEEE; --To make a combined entity of I2C slave and PWM controller
+USE IEEE.STD_LOGIC_1164.ALL;
 
-				LIBRARY IEEE; --To make a combined entity of I2C slave and PWM controller
-				USE IEEE.STD_LOGIC_1164.ALL;
+ENTITY I2Cpwm IS
+	PORT (
+		clk : IN std_logic;
+		sda : INOUT std_logic := 'Z';
+		reset : IN std_logic;
+		scl : IN std_logic;
+		pwm_out : OUT STD_LOGIC
+	     );
+END I2Cpwm;
 
-				ENTITY I2Cpwm IS
-					PORT (
-					clk : IN std_logic;
-					sda : INOUT std_logic := 'Z';
-					reset : IN std_logic;
-					scl : IN std_logic;
-					pwm_out : OUT STD_LOGIC
-					);
-				END I2Cpwm;
-
-				ARCHITECTURE Behavioral OF I2Cpwm IS
-					COMPONENT pwm
-						GENERIC (N : INTEGER);
-						PORT (
-							clk : IN std_logic;
-							pwm_count : IN std_logic_vector(7 DOWNTO 0); 
-							pwm_out : OUT std_logic
-						);
-					END COMPONENT;
+ARCHITECTURE Behavioral OF I2Cpwm IS
+	COMPONENT pwm
+		GENERIC (N : INTEGER);
+		PORT (
+			clk : IN std_logic;
+			pwm_count : IN std_logic_vector(7 DOWNTO 0); 
+			pwm_out : OUT std_logic
+	         	);
+		END COMPONENT;
  
-					COMPONENT slave
-						GENERIC (
-							address : STD_LOGIC_VECTOR(6 DOWNTO 0);
-							N : INTEGER
-						);
-						PORT (
-							clk : IN std_logic;
-							reset : IN std_logic;
-							scl : IN std_logic; 
-							sda : INOUT std_logic; 
-							d : OUT std_logic_vector(7 DOWNTO 0)
-						);
-					END COMPONENT;
-					SIGNAL dat : std_logic_vector(7 DOWNTO 0);
-				BEGIN
-					--Four I2C registers
-					--Data size is kept as 8 bits
-					i2c_reg1 : slave
-						GENERIC MAP(
-						address => "1010100", 
-						N => 8)
-						PORT MAP(
-							clk => clk, 
-							reset => reset, 
-							scl => scl, 
-							sda => sda, 
-							d => dat
-							);
-					i2c_reg2 : slave
-						GENERIC MAP(
-						address => "1010000", 
-						N => 8)
-						PORT MAP(
-							clk => clk, 
-							reset => reset, 
-							scl => scl, 
-							sda => sda, 
-							d => dat
-							);
-					i2c_reg3 : slave
-						GENERIC MAP(
-						address => "1010111", 
-						N => 8)
-						PORT MAP(
-							clk => clk, 
-							reset => reset, 
-							scl => scl, 
-							sda => sda, 
-							d => dat
-							);
-					i2c_reg4 : slave
-						GENERIC MAP(
-						address => "1111111", 
-						N => 8)
-						PORT MAP(
-							clk => clk, 
-							reset => reset, 
-							scl => scl, 
-							sda => sda, 
-							d => dat
-							); 
+	COMPONENT slave
+		GENERIC (
+			address : STD_LOGIC_VECTOR(6 DOWNTO 0);
+			N : INTEGER
+			);
+		PORT (
+			clk : IN std_logic;
+			reset : IN std_logic;
+			scl : IN std_logic; 
+			sda : INOUT std_logic; 
+			d : OUT std_logic_vector(7 DOWNTO 0)
+			);
+	END COMPONENT;
+	SIGNAL dat : std_logic_vector(7 DOWNTO 0);
+	BEGIN
+		--Four I2C registers
+		--Data size is kept as 8 bits
+		i2c_reg1 : slave
+			GENERIC MAP(
+				address => "1010100", 
+				N => 8)
+			PORT MAP(
+				clk => clk, 
+				reset => reset, 
+				scl => scl, 
+				sda => sda, 
+				d => dat
+				);
+		i2c_reg2 : slave
+			GENERIC MAP(
+				address => "1010000", 
+				N => 8)
+			PORT MAP(
+				clk => clk, 
+				reset => reset, 
+				scl => scl, 
+				sda => sda, 
+				d => dat
+				);
+		i2c_reg3 : slave
+			GENERIC MAP(
+				address => "1010111", 
+				N => 8)
+			PORT MAP(
+				clk => clk, 
+				reset => reset, 
+				scl => scl, 
+				sda => sda, 
+				d => dat
+				);
+		i2c_reg4 : slave
+			GENERIC MAP(
+				address => "1111111", 
+				N => 8)
+			PORT MAP(
+				clk => clk, 
+				reset => reset, 
+				scl => scl, 
+				sda => sda, 
+				d => dat
+				); 
 
-					pwm_gen : pwm
-						GENERIC MAP(N => 8)
-						PORT MAP(
-							clk => clk, 
-							pwm_count => dat, 
-							pwm_out => pwm_out
-							);
+		pwm_gen : pwm
+			GENERIC MAP(N => 8)
+			PORT MAP(
+				clk => clk, 
+				pwm_count => dat, 
+				pwm_out => pwm_out
+				);
  
  
 

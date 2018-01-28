@@ -4,27 +4,28 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity slave is
-generic(address: STD_LOGIC_VECTOR(6 downto 0);
-			N: INTEGER);
-port(	clk:in std_logic;
+	generic(address: STD_LOGIC_VECTOR(6 downto 0);	--Seven bit address 
+		N: INTEGER);				--N define the data bits size
+
+	port(	clk:in std_logic;			--system clock
 		sda:inout std_logic:='Z';
-		reset:in std_logic;
-		scl:in std_logic;
-		d:out STD_LOGIC_VECTOR(N-1 downto 0));
+		reset:in std_logic;			--goes to idle state when reset is 1
+		scl:in std_logic;		
+		d:out STD_LOGIC_VECTOR(N-1 downto 0));	--contains data to be transmitted
 end slave;
 
 architecture I2C of slave is
-type machine is (idle,start,read_address,receive_data);
-signal state:machine :=idle;
-signal data:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'0');
-signal addr:STD_LOGIC_VECTOR(6 downto 0):=(others=>'0');
-shared variable count:INTEGER range N-1 downto 0:=0;
-shared variable flag:STD_LOGIC:='0';
+	type machine is (idle,start,read_address,receive_data);	
+	signal state:machine :=idle;
+	signal data:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'0');
+	signal addr:STD_LOGIC_VECTOR(6 downto 0):=(others=>'0');
+	shared variable count:INTEGER range N-1 downto 0:=0;
+	shared variable flag:STD_LOGIC:='0';
 
 begin
 
-process(clk,reset,scl)
-begin
+	process(clk,reset,scl)
+	begin
 	if(clk'event and clk='1') then
 		if reset='0' then
 			case state is
@@ -40,7 +41,7 @@ begin
 						state<=read_address;
 						count:=6;
 					end if;
-				when read_address=>
+				when read_address=>			-- Reads the address from the SDA line 
 					if(count>=0) then 
 						if(scl'event and scl='1') then
 							addr(count)<=sda;
@@ -68,7 +69,7 @@ begin
 								d<=(others=>'Z');
 						end if;
 					end if;
-				when receive_data=>
+				when receive_data=>		--Goes to receive data if the address matches
 					if(count >= 0) then 
 						if(scl'event and scl='1') then
 							data(count)<=sda;
@@ -76,74 +77,80 @@ begin
 						end if;
 					else
 						if(scl'event and scl='0') then
-								sda<='Z';
-								flag:='1';
-								d(N-1 downto 0)<=data;
-								count:=N-1;
+							sda<='Z';
+							flag:='1';
+							d(N-1 downto 0)<=data;
+							count:=N-1;
 						end if;
 					end if;
-						
-						if(flag='1' and scl='1' and sda='1' and sda'event) then		--STOP CONDITION
-							state<=idle;					
-							flag:='0';
-							d(N-1 downto 0)<=(others=>'0');
-						end if;
+					
+					--STOP condition	
+					if(flag='1' and scl='1' and sda='1' and sda'event) then	  
+						state<=idle;					
+						flag:='0';
+						d(N-1 downto 0)<=(others=>'0');
+					end if;
 				end case;
 					
 		else
-			state<=idle;
+			state<=idle;			-- goes here when the reset is 1
+			flag:='0';
+			d(N-1 downto 0)<=(others=>'0');
+			
 		end if;
 	end if;
 
-end process;
+	end process;
 end I2C;
 
-library IEEE;
+library IEEE;						
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.all;
 use IEEE.STD_LOGIC_UNSIGNED.all;
 
-entity pwm is
-generic(N: INTEGER);
-port(clk:in STD_LOGIC;
+entity pwm is						-- The pwm generator starts here
+	generic(N: INTEGER);				-- Defines the pwm data bit size
+
+	port(	clk:in STD_LOGIC;
 		pwm_count:in STD_LOGIC_VECTOR(N-1 downto 0);
 		pwm_out:out STD_LOGIC);
 
 end pwm;
 
 architecture Behavioral of pwm is
-signal max_count:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'1');
-signal cout:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'0');
-signal pwm_input:STD_LOGIC_VECTOR(N-1 downto 0);
-signal check:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'Z');
-begin
-process(clk)
-begin
-if(pwm_count=check) then
-	pwm_input<=(others=>'0');
-else
-	pwm_input<=pwm_count;
-end if;
-	if(clk'event and clk='1')then
-		if(cout <= max_count) then
-			if(cout < pwm_input)then
-				pwm_out <= '1';
+	
+	signal max_count:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'1');
+	signal cout:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'0');
+	signal pwm_input:STD_LOGIC_VECTOR(N-1 downto 0);
+	signal check:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'Z');
+	begin
+		process(clk)
+		begin
+			if(pwm_count=check) then
+				pwm_input<=(others=>'0');
 			else
-				pwm_out <= '0';
+				pwm_input<=pwm_count;
 			end if;
-			cout<=cout + 1;
-		else
-			cout<=(others=>'0');
+			if(clk'event and clk='1')then
+				if(cout <= max_count) then
+					if(cout < pwm_input)then
+						pwm_out <= '1';
+					else
+						pwm_out <= '0';
+					end if;
+				cout<=cout + 1;
+				else
+		cout<=(others=>'0');
 		end if;
 	end if;
 end process;
 end Behavioral;
 
-library IEEE;
+library IEEE;			--To make a combined entity of I2C slave and PWM controller
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity I2Cpwm is
-port(clk:in std_logic;
+	   port(clk:in std_logic;
 		sda:inout std_logic:='Z';
 		reset:in std_logic;
 		scl:in std_logic;
@@ -151,66 +158,65 @@ port(clk:in std_logic;
 end I2Cpwm;
 
 architecture Behavioral of I2Cpwm is
-COMPONENT pwm
-generic(N: INTEGER);
-	PORT(
-		clk : IN std_logic;
-		pwm_count : IN std_logic_vector(7 downto 0);          
-		pwm_out : OUT std_logic
-		);
+	COMPONENT pwm
+		generic(N: INTEGER);
+		PORT(clk : IN std_logic;
+		     pwm_count : IN std_logic_vector(7 downto 0);          
+		     pwm_out : OUT std_logic);
 	END COMPONENT; 
-COMPONENT slave
+	
+	COMPONENT slave
 	generic(address: STD_LOGIC_VECTOR(6 downto 0);
-				N:INTEGER);
-	PORT(
-		clk : IN std_logic;
-		reset : IN std_logic;
-		scl : IN std_logic;    
-		sda : INOUT std_logic;     
-		d : OUT std_logic_vector(7 downto 0)
-		);
+		N:INTEGER);
+		PORT(
+			clk : IN std_logic;
+			reset : IN std_logic;
+			scl : IN std_logic;    
+			sda : INOUT std_logic;     
+			d : OUT std_logic_vector(7 downto 0));
 	END COMPONENT;
-signal dat:std_logic_vector(7 downto 0);
-begin
+	signal dat:std_logic_vector(7 downto 0);
+	begin
+		--Four I2C registers
+		--Data size is kept as 8 bits
+		i2c_reg1 : slave
+  		 generic map(address=>"1010100",
+					N=>8)
+			port map(clk =>clk,
+				reset => reset,
+				scl => scl,   
+				sda => sda,     
+				d => dat);
+		i2c_reg2 : slave
+   		 generic map(address=>"1010000",
+					N=>8)
+			port map(clk =>clk,
+				reset => reset,
+				scl => scl,   
+				sda => sda,     
+				d => dat);
+		i2c_reg3 : slave
+  		 generic map(address=>"1010111",
+					N=>8)
+			port map(clk =>clk,
+				reset => reset,
+				scl => scl,   
+				sda => sda,     
+				d => dat);
+		i2c_reg4 : slave
+  		 generic map(address=>"1111111",
+					N=>8)
+			port map(clk =>clk,
+				reset => reset,
+				scl => scl,   
+				sda => sda,     
+				d => dat);		
 
-i2c_reg1 : slave
-   generic map(address=>"1010100",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);
-i2c_reg2 : slave
-   generic map(address=>"1010000",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);
-i2c_reg3 : slave
-   generic map(address=>"1010111",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);
-i2c_reg4 : slave
-   generic map(address=>"1111111",
-					N=>8)
-		port map(clk =>clk,
-		reset => reset,
-		scl => scl,   
-		sda => sda,     
-		d => dat);		
-
-pwm_gen : pwm
-	generic map(N=> 8)
-	port map(clk => clk ,
-		pwm_count => dat ,
-		pwm_out => pwm_out);
+		pwm_gen : pwm
+		 generic map(N=> 8)
+			port map(clk => clk ,
+			pwm_count => dat ,
+			pwm_out => pwm_out);
 	
 	
 

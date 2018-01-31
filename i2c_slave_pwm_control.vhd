@@ -26,14 +26,14 @@ ARCHITECTURE I2C OF slave IS
 BEGIN
 	PROCESS (reset, scl, sda )
 	BEGIN
-			IF reset = '0' THEN
-				CASE state IS
-					WHEN idle => 
-						IF (scl = '1' AND falling_edge(sda)) THEN
-							state <= read_address;
-							count := 6;
-							sda <= 'Z';
-						END IF;
+	    IF reset = '0' THEN
+		CASE state IS
+		   WHEN idle => 
+			IF (scl = '1' AND falling_edge(sda)) THEN
+		     	  	state <= read_address;	
+			count := 6;
+			sda <= 'Z';
+			END IF;
 					WHEN read_address => -- Reads the address from the SDA line
 						IF count >= 0 THEN
 							IF rising_edge(scl) THEN

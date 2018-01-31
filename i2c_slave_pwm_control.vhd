@@ -149,7 +149,9 @@ ENTITY I2Cpwm IS
 		sda : INOUT std_logic := 'Z';
 		reset : IN std_logic;
 		scl : IN std_logic;
-		pwm_out : OUT STD_LOGIC
+		pwm_out : OUT STD_LOGIC;
+		sda_out : INOUT STD_LOGIC;
+		scl_out : INOUT STD_LOGIC
 	     );
 END I2Cpwm;
 
@@ -176,7 +178,45 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 			);
 	END COMPONENT;
 	SIGNAL dat : std_logic_vector(7 DOWNTO 0);
+	shared variable t1: INTEGER range 0 to 6;
+	shared variable t2: INTEGER range 0 to 6;
+	shared variable sda_prev: STD_LOGIC :='U';
+	shared variable scl_prev: STD_LOGIC :='U';
 	BEGIN
+		-- Spike suppressing code
+		process(sda)
+		begin
+			sda_prev:=sda;
+			t1:=0;
+		end process;
+		process(scl)
+		begin
+			scl_prev:=scl;
+			t2:=0;
+		end process;
+
+		process(clk)
+		begin
+			if sda = sda_prev and rising_edge(clk) then
+				if t1 < 6 then
+					t1 := t1+1;
+				else
+					sda_out <= sda;
+					sda_prev := 'U' ;
+				end if;	
+			end if;
+			
+			if scl=scl_prev and rising_edge(clk) then
+				if t2<6 then
+					t2:=t2+1;
+				else
+					scl_out <= scl;
+					scl_prev := 'U' ;
+				end if;	
+			end if;
+		end process;
+		
+		
 		--Four I2C registers
 		--Data size is kept as 8 bits
 		i2c_reg1 : slave
@@ -185,8 +225,8 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				N => 8)
 			PORT MAP(
 				reset => reset, 
-				scl => scl, 
-				sda => sda, 
+				scl => scl_out, 
+				sda => sda_out, 
 				d => dat
 				);
 		i2c_reg2 : slave
@@ -195,8 +235,8 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				N => 8)
 			PORT MAP(
 				reset => reset, 
-				scl => scl, 
-				sda => sda, 
+				scl => scl_out, 
+				sda => sda_out, 
 				d => dat
 				);
 		i2c_reg3 : slave
@@ -205,8 +245,8 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				N => 8)
 			PORT MAP(
 				reset => reset, 
-				scl => scl, 
-				sda => sda, 
+				scl => scl_out, 
+				sda => sda_out, 
 				d => dat
 				);
 		i2c_reg4 : slave
@@ -215,8 +255,8 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
 				N => 8)
 			PORT MAP(
 				reset => reset, 
-				scl => scl, 
-				sda => sda, 
+				scl => scl_out, 
+				sda => sda_out, 
 				d => dat
 				); 
 

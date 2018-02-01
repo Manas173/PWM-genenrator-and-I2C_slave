@@ -180,99 +180,99 @@ ARCHITECTURE Behavioral OF I2Cpwm IS
    SIGNAL dat : std_logic_vector(7 DOWNTO 0);
    shared variable t1: INTEGER range 0 to 6;
    shared variable t2: INTEGER range 0 to 6;
-signal sda_prev: STD_LOGIC;
-	signal scl_prev:STD_LOGIC;
-	BEGIN
-		-- Spike suppressing code
-		process(sda)
-		begin
-			sda_prev<=sda;
-			t1:=0;
-		end process;
-		process(scl)
-		begin
-			scl_prev<=scl;
-			t2:=0;
-		end process;
+   signal sda_prev: STD_LOGIC;
+   signal scl_prev:STD_LOGIC;
+   BEGIN
+    -- Spike suppressing code
+    process(sda)
+      begin
+	sda_prev<=sda;
+	t1:=0;
+      end process;
+    process(scl)
+      begin
+        scl_prev<=scl;
+	t2:=0;
+    end process;
 
-		process(clk)
-		begin
-		if rising_edge(clk) then
-			if sda = sda_prev  then
-				if t1 < 5 then
-					t1 := t1+1;
-				else
-					sda_out <= sda;
-					sda_prev <= 'Z' ;
-				end if;	
-			end if;
-			end if;
-		end process;
+    process(clk)
+      begin
+	if rising_edge(clk) then
+           if sda = sda_prev  then
+		if t1 < 5 then
+		   t1 := t1+1;
+		else
+		   sda_out <= sda;
+		   sda_prev <= 'Z' ;
+		end if;	
+	   end if;
+	end if;
+     end process;
 				
-		process(clk)
-		begin
-			if(rising_edge(clk)) then
-			if scl = scl_prev  then
-				if t2<5 then
-					t2:=t2+1;
-				else
-					scl_out <= scl;
-					scl_prev <= 'Z' ;
+    process(clk)
+      begin
+	if(rising_edge(clk)) then
+	   if scl = scl_prev  then
+		if t2<5 then
+		    t2:=t2+1;
+		else
+		    scl_out <= scl;
+		    scl_prev <= 'Z' ;
 				end if;	
-			end if;
-			end if;
-		end process;
+		end if;
+	   end if;
+     end process;
 		
-		--Four I2C registers
-		--Data size is kept as 8 bits
-		i2c_reg1 : slave
-			GENERIC MAP(
-				address => "1010100", 
-				N => 8)
-			PORT MAP(
-				reset => reset, 
-				scl => scl_out, 
-				sda => sda_out, 
-				d => dat
-				);
-		i2c_reg2 : slave
-			GENERIC MAP(
-				address => "1010000", 
-				N => 8)
-			PORT MAP(
-				reset => reset, 
-				scl => scl_out, 
-				sda => sda_out, 
-				d => dat
-				);
-		i2c_reg3 : slave
-			GENERIC MAP(
-				address => "1010111", 
-				N => 8)
-			PORT MAP(
-				reset => reset, 
-				scl => scl_out, 
-				sda => sda_out, 
-				d => dat
-				);
-		i2c_reg4 : slave
-			GENERIC MAP(
-				address => "1111111", 
-				N => 8)
-			PORT MAP(
-				reset => reset, 
-				scl => scl_out, 
-				sda => sda_out, 
-				d => dat
-				); 
+     --Four I2C registers
+     --Data size is kept as 8 bits
+     i2c_reg1 : slave
+	GENERIC MAP(
+		 address => "1010100", 
+		 N => 8)
+	PORT MAP(
+		 reset => reset, 
+		 scl => scl_out, 
+		 sda => sda_out, 
+		 d => dat
+		);
+     i2c_reg2 : slave
+	GENERIC MAP(
+		 address => "1010000", 
+		 N => 8)
+	PORT MAP(
+		reset => reset, 
+		scl => scl_out, 
+		sda => sda_out, 
+		d => dat
+		);
+     i2c_reg3 : slave
+	GENERIC MAP(
+		address => "1010111", 
+		N => 8)
+	PORT MAP(
+		reset => reset, 
+		scl => scl_out, 
+		sda => sda_out, 
+		d => dat
+		);
+     i2c_reg4 : slave
+	GENERIC MAP(
+		address => "1111111", 
+		N => 8)
+	PORT MAP(
+		reset => reset, 
+		scl => scl_out, 
+		sda => sda_out, 
+		d => dat
+		); 
 
-		pwm_gen : pwm
-			GENERIC MAP(N => 8)
-			PORT MAP(
-				clk => clk, 
-				pwm_count => dat, 
-				pwm_out => pwm_out
-				);
+      pwm_gen : pwm
+	GENERIC MAP(N => 8)
+	PORT MAP(
+		clk => clk, 
+		pwm_count => dat, 
+		pwm_out => pwm_out
+		);
  
  
 

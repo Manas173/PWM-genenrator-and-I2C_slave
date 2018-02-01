@@ -156,66 +156,72 @@ ENTITY I2Cpwm IS
 END I2Cpwm;
 
 ARCHITECTURE Behavioral OF I2Cpwm IS
-	COMPONENT pwm
-	  GENERIC (N : INTEGER);
-	   PORT (
-		clk : IN std_logic;
-		pwm_count : IN std_logic_vector(7 DOWNTO 0); 
-		pwm_out : OUT std_logic
-	         );
-	   END COMPONENT;
+  COMPONENT pwm
+    GENERIC (N : INTEGER);
+      PORT (
+	    clk : IN std_logic;
+	    pwm_count : IN std_logic_vector(7 DOWNTO 0); 
+	    pwm_out : OUT std_logic
+	    );
+      END COMPONENT;
  
-	COMPONENT slave
-	   GENERIC (
-		address : STD_LOGIC_VECTOR(6 DOWNTO 0);
-		N : INTEGER
-		   );
-	   PORT (
-		reset : IN std_logic;
-		scl : IN std_logic; 
-		sda : INOUT std_logic; 
-		d : OUT std_logic_vector(7 DOWNTO 0)
-		);
-	END COMPONENT;
-	SIGNAL dat : std_logic_vector(7 DOWNTO 0);
-	shared variable t1: INTEGER range 0 to 6;
-	shared variable t2: INTEGER range 0 to 6;
-	shared variable sda_prev: STD_LOGIC :='U';
-	shared variable scl_prev: STD_LOGIC :='U';
+  COMPONENT slave
+     GENERIC (
+	      address : STD_LOGIC_VECTOR(6 DOWNTO 0);
+	      N : INTEGER
+	     );
+     PORT (
+	    reset : IN std_logic;
+	    scl : IN std_logic; 
+            sda : INOUT std_logic; 
+	     d : OUT std_logic_vector(7 DOWNTO 0)
+	   );
+   END COMPONENT;
+   SIGNAL dat : std_logic_vector(7 DOWNTO 0);
+   shared variable t1: INTEGER range 0 to 6;
+   shared variable t2: INTEGER range 0 to 6;
+signal sda_prev: STD_LOGIC;
+	signal scl_prev:STD_LOGIC;
 	BEGIN
 		-- Spike suppressing code
-	     process(sda)
-	       begin
-		sda_prev:=sda;
-		t1:=0;
-	       end process;
-	     process(scl)
-	       begin
-		scl_prev:=scl;
-		t2:=0;
-	       end process;
-
-	     process(clk)
-	       begin
-		  if sda = sda_prev and rising_edge(clk) then
-		     if t1 < 6 then
-	   	       t1 := t1+1;
-		     else
-		       sda_out <= sda;
-		       sda_prev := 'U' ;
-		     end if;	
-		  end if;
-			
-		  if scl=scl_prev and rising_edge(clk) then
-		     if t2<6 then
-		      t2:=t2+1;
-		     else
-		      scl_out <= scl;
-		      scl_prev := 'U' ;
-		     end if;	
-		  end if;
+		process(sda)
+		begin
+			sda_prev<=sda;
+			t1:=0;
 		end process;
-		
+		process(scl)
+		begin
+			scl_prev<=scl;
+			t2:=0;
+		end process;
+
+		process(clk)
+		begin
+		if rising_edge(clk) then
+			if sda = sda_prev  then
+				if t1 < 5 then
+					t1 := t1+1;
+				else
+					sda_out <= sda;
+					sda_prev <= 'Z' ;
+				end if;	
+			end if;
+			end if;
+		end process;
+				
+		process(clk)
+		begin
+			if(rising_edge(clk)) then
+			if scl = scl_prev  then
+				if t2<5 then
+					t2:=t2+1;
+				else
+					scl_out <= scl;
+					scl_prev <= 'Z' ;
+				end if;	
+			end if;
+			end if;
+		end process;
 		
 		--Four I2C registers
 		--Data size is kept as 8 bits

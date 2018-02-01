@@ -30,52 +30,52 @@ BEGIN
 		CASE state IS
 		   WHEN idle => 
 			IF (scl = '1' AND falling_edge(sda)) THEN
-		     	  	state <= read_address;	
-			count := 6;
-			sda <= 'Z';
+		     	  state <= read_address;	
+			  count := 6;
+			  sda <= 'Z';
 			END IF;
-					WHEN read_address => -- Reads the address from the SDA line
-						IF count >= 0 THEN
-							IF rising_edge(scl) THEN
-								addr(count) <= sda;
-								count := count - 1;
-							END IF;
-						ELSE
-							IF addr = address THEN
-								IF falling_edge(scl) THEN
-									sda <= '0';
-									flag := '1';
-								END IF;
-							ELSE
-								sda <= 'Z';
-								flag := '0';
-							END IF;
+		   WHEN read_address => -- Reads the address from the SDA line
+			IF count >= 0 THEN
+			   IF rising_edge(scl) THEN
+				addr(count) <= sda;
+				count := count - 1;
+  			   END IF;
+			ELSE
+			   IF addr = address THEN
+				IF falling_edge(scl) THEN
+		           	   sda <= '0';
+				   flag := '1';
+				END IF;
+			   ELSE
+		  		sda <= 'Z';
+				flag := '0';
+			   END IF;
  
-							IF (flag = '1' AND rising_edge(scl)) THEN
-								state <= receive_data;
-								count := N - 1;
-								d <= (OTHERS => '0');
-								data <= (OTHERS => '0');
-							ELSIF (flag = '0' AND falling_edge(scl)) THEN
-								state <= idle;
-								sda <= 'Z';
-								d <= (OTHERS => 'Z');
-							END IF;
-						END IF;
-					WHEN receive_data => --Goes to receive data if the address matches
-						IF count >= 0 THEN
-								sda <= 'Z';
-							IF rising_edge(scl) THEN
-								data(count) <= sda;
-								count := count - 1;
-							END IF;
-						ELSE
-							IF falling_edge(scl) THEN
-								sda <= '0';
-								flag := '1';
-								d(N - 1 DOWNTO 0) <= data;
-								count := N - 1;
-							END IF;
+			IF (flag = '1' AND rising_edge(scl)) THEN
+				state <= receive_data;
+				count := N - 1;
+				d <= (OTHERS => '0');
+				data <= (OTHERS => '0');
+			ELSIF (flag = '0' AND falling_edge(scl)) THEN
+				state <= idle;
+				sda <= 'Z';
+			d <= (OTHERS => 'Z');
+			END IF;
+			END IF;
+		   WHEN receive_data => --Goes to receive data if the address matches
+			IF count >= 0 THEN
+ 				sda <= 'Z';
+			   IF rising_edge(scl) THEN
+				data(count) <= sda;
+				count := count - 1;
+			   END IF;
+			ELSE
+			   IF falling_edge(scl) THEN
+				sda <= '0';
+				flag := '1';
+				d(N - 1 DOWNTO 0) <= data;
+				count := N - 1;
+			END IF;
 						END IF;
  
 						--STOP condition 

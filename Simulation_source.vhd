@@ -1,8 +1,8 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
  
-ENTITY asdas IS
-END asdas;
+ENTITY sim_source IS
+END sim_source;
  
 ARCHITECTURE behavior OF asdas IS 
  

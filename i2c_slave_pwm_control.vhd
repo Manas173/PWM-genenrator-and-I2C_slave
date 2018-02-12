@@ -91,8 +91,8 @@ BEGIN
 			END IF;
 		       count_data <= count_data - 1;
 		    ELSIF start_ack2 = '0' THEN
-		   data(0) <= sda;
-                   count_data <= N - 1;
+		       data(0) <= sda;
+                       count_data <= N - 1;
 		   END IF;
 	       END IF; 
  

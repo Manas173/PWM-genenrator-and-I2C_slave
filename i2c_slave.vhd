@@ -1,104 +1,175 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.std_logic_arith.all;
-use IEEE.std_logic_unsigned.all;
+LIBRARY IEEE;
+USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.std_logic_arith.ALL;
+USE IEEE.std_logic_unsigned.ALL;
 
-entity slave is
-	generic(address: STD_LOGIC_VECTOR(6 downto 0);	--Seven bit address 
-		N: INTEGER);				--N define the data bits size
+ENTITY slave IS
+GENERIC (
+    address : STD_LOGIC_VECTOR(6 DOWNTO 0); --Seven bit address
+    N : INTEGER ); --N define the data bits size
 
-	port(	clk:in std_logic;			--system clock
-		sda:inout std_logic:='Z';
-		reset:in std_logic;			--goes to idle state when reset is 1
-		scl:in std_logic;		
-		d:out STD_LOGIC_VECTOR(N-1 downto 0));	--contains data to be transmitted
-end slave;
+PORT (
+    sda : IN std_logic;
+    reset : IN std_logic; --goes to idle state when reset is 1
+    scl : IN std_logic;
+    ack_addr : OUT std_logic := '0';
+    ack_data : OUT std_logic;
+    d : OUT STD_LOGIC_VECTOR(N - 1 DOWNTO 0)
+    ); --contains data to be transmitted
+END slave;
 
-architecture I2C of slave is
-	type machine is (idle,start,read_address,receive_data);	
-	signal state:machine :=idle;
-	signal data:STD_LOGIC_VECTOR(N-1 downto 0):=(others=>'0');
-	signal addr:STD_LOGIC_VECTOR(6 downto 0):=(others=>'0');
-	shared variable count:INTEGER range N-1 downto 0:=0;
-	shared variable flag:STD_LOGIC:='0';
-
-begin
-
-	process(clk,reset,scl)
-	begin
-	if(clk'event and clk='1') then
-		if reset='0' then
-			case state is
-				when idle=>
-					if clk'event and clk='1' then
-					end if;
-					if(scl='1' and sda'event and sda='0') then
-						state<=start;
-						sda<='Z';
-					end if;
-				when start=>
-					if(clk'event and clk='1') then
-						state<=read_address;
-						count:=6;
-					end if;
-				when read_address=>			-- Reads the address from the SDA line 
-					if(count>=0) then 
-						if(scl'event and scl='1') then
-							addr(count)<=sda;
-							count:=count-1;
-						end if;
-					else
-						if addr=address then
-							if(scl'event and scl='0') then
-								sda<='Z';
-								flag:='1';
-							end if;
-						else
-							sda<='1';
-							flag:='0';
-						end if;
-					
-						if (flag='1' and scl'event and scl='1') then
-							state<=receive_data;
-							count:=N-1;
-							d<=(others=>'0');
-							data<=(others=>'0');
-						elsif(flag='0' and scl'event and scl='0') then
-								state<=idle;
-								sda<='Z';
-								d<=(others=>'Z');
-						end if;
-					end if;
-				when receive_data=>		--Goes to receive data if the address matches
-					if(count >= 0) then 
-						if(scl'event and scl='1') then
-							data(count)<=sda;
-							count:=count-1;
-						end if;
-					else
-						if(scl'event and scl='0') then
-							sda<='Z';
-							flag:='1';
-							d(N-1 downto 0)<=data;
-							count:=N-1;
-						end if;
-					end if;
-					
-					--STOP condition	
-					if(flag='1' and scl='1' and sda='1' and sda'event) then	  
-						state<=idle;					
-						flag:='0';
-						d(N-1 downto 0)<=(others=>'0');
-					end if;
-				end case;
-					
-		else
-			state<=idle;			-- goes here when the reset is 1
-			flag:='0';
-			d(N-1 downto 0)<=(others=>'0');
+ARCHITECTURE I2C OF slave IS
+TYPE machine IS (idle, read_address, receive_data, stop_pos);
+SIGNAL state : machine := idle;
+SIGNAL data : STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
+SIGNAL start : STD_LOGIC;
+SIGNAL stop : STD_LOGIC;
+SIGNAL repeat_receive : STD_LOGIC := '0';
+SIGNAL start_ack : STD_LOGIC := '0';
+SIGNAL start_ack2 : STD_LOGIC := '0';
+SIGNAL next_state1 : STD_LOGIC := '0';
+SIGNAL next_state2 : STD_LOGIC := '0';
+SIGNAL next_data : STD_LOGIC := '0';
+SIGNAL address_ack : STD_LOGIC := '0';
+SIGNAL count_addr : INTEGER RANGE 7 DOWNTO 0 := 7;
+SIGNAL count_data : INTEGER RANGE N DOWNTO 0 := N - 1;
+SIGNAL addr : STD_LOGIC_VECTOR(6 DOWNTO 0);
+BEGIN
+    PROCESS (state, sda, scl, repeat_receive, start_ack2, count_data, count_addr)
+      BEGIN
+         CASE state IS
+             WHEN idle => 
+                 stop <= '0';
+                 start_ack <= '0';
+		 next_state1 <= '0';
+		 ack_data <= '0';
+		 count_data <= N;
+		IF falling_edge(sda) AND scl = '1' THEN
+		    start <= '1';
+		END IF;
 			
-		end if;
-	end if;
-
-	end process;
-end I2C;
+	     WHEN read_address => 
+		 start <= '0';
+		IF rising_edge(scl) AND state = read_address AND start_ack = '0' THEN
+		    IF count_addr > 0 THEN
+		       addr(count_addr - 1) <= sda;
+		       count_addr <= count_addr - 1;
+		    END IF;
+		END IF;
+		IF falling_edge(scl) THEN
+		    IF count_addr = 0 THEN
+			start_ack <= '1';
+			count_addr <= 7;
+		    ELSE
+			start_ack <= '0';
+		    END IF;
+		END IF;
+		IF falling_edge(scl) THEN
+		    IF count_addr = 0 AND address = addr THEN
+			ack_addr <= '1';
+			addr <= (OTHERS => '0');
+			address_ack <= '1';
+		    ELSE
+			ack_addr <= '0';
+			address_ack <= '0';
+		    END IF;
+		END IF;
+ 
+		IF start_ack = '1' AND falling_edge(scl) THEN
+			next_state1 <= '1';
+		END IF;
+ 
+ 
+	    WHEN receive_data => 
+		IF rising_edge(scl) AND state = receive_data THEN
+		    IF count_data > 0 AND start_ack2 = '0' THEN
+			IF repeat_receive = '0' THEN
+			    data(count_data) <= sda;
+			ELSE
+			    data(N - 1) <= next_data;
+			    data(count_data - 1) <= sda;
+			END IF;
+		       count_data <= count_data - 1;
+		    ELSIF start_ack2 = '0' THEN
+		       data(0) <= sda;
+                       count_data <= N - 1;
+		   END IF;
+	       END IF; 
+ 
+	      IF falling_edge(scl) AND state = receive_data THEN
+		  IF repeat_receive = '1' AND count_data = 0 THEN
+		       IF start_ack2 = '0' THEN
+			   start_ack2 <= '1';
+			   ack_data <= '1';
+		       ELSE
+			   start_ack2 <= '0';
+			   ack_data <= '0';
+		       END IF;
+		  ELSIF repeat_receive = '0' AND count_data = 7 THEN
+		       IF start_ack2 = '0' THEN
+			   start_ack2 <= '1';
+			   ack_data <= '1';
+		       ELSE
+			   start_ack2 <= '0';
+		           ack_data <= '0';
+		       END IF;
+		  END IF;
+	     END IF;
+		     
+		     
+	  WHEN stop_pos => 
+	      ack_data <= '0';
+	      IF rising_edge(sda) THEN
+		  IF scl = '1' THEN
+		       stop <= '1';
+		  ELSE
+		       stop <= '0';
+		  END IF;
+	      END IF;
+ 
+	      IF rising_edge(scl) AND start_ack2 = '1' THEN
+		  start_ack2 <= '0';
+   	      END IF;
+	      IF rising_edge(scl) AND NOT(addr = "0000000") THEN
+		  addr <= (OTHERS => '0');
+	      END IF;
+	      IF rising_edge(scl) AND state = stop_pos THEN
+		  repeat_receive <= '1';
+		  next_data <= sda;
+	      END IF;
+	 END CASE;
+   END PROCESS;
+ 
+   PROCESS (reset, start, count_addr, stop, addr, count_data, repeat_receive, start_ack, next_state1, address_ack)
+       BEGIN
+	  IF reset = '0' THEN
+	    IF falling_edge(scl) THEN
+                IF start = '1' THEN
+                   state <= read_address;
+		END IF;
+ 
+	    IF stop = '1' THEN
+	       state <= idle;
+	       d <= (OTHERS => '0');
+	    END IF;
+	    IF repeat_receive = '1' AND stop = '0' THEN
+	       state <= receive_data;
+	    END IF;
+	    IF state = read_address AND count_addr = 7 THEN
+		IF address_ack = '1' THEN
+		    IF start_ack = '1' THEN
+			state <= receive_data;
+		    END IF;
+		ELSIF start_ack = '1' THEN 
+		    state <= idle;
+		END IF;
+	    END IF;
+	    IF state = receive_data AND start_ack2 = '1' THEN
+		state <= stop_pos;
+		d <= data;
+	    END IF;
+	END IF;
+      END IF;
+END PROCESS;
+ 
+END I2C;
